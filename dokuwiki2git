@@ -137,14 +137,25 @@ class Converter:
 			return
 		pagename = pagepath.replace('/', ':')
 		log.debug('Reading meta for page "%s"' % pagename)
+                changelog = []
 		with open(fullpath, 'rb') as f:
 			for line in f:
 				changeparts = line.split('\t')
 				log.debug(changeparts)
 				assert(len(changeparts) == 7)
-				assert(changeparts[3] == pagename)
-				assert(changeparts[2] in ('C', 'D', 'E', 'e')) # create, delete, edit, minor edit
-				self.changelog.append(changeparts)
+                                if changeparts[2] == 'R':
+                                        target = changeparts[6].rstrip()
+                                        assert(target in [entry[0] for entry in changelog])
+                                        while True:
+                                                entry = changelog.pop()
+                                                if entry[0] == target:
+                                                        changeparts = entry
+                                                        break
+                                else:
+                                        assert(changeparts[2] in ('C', 'D', 'E', 'e')) # create, delete, edit, minor edit
+				changelog.append(changeparts)
+                assert(changelog == [] or changelog[-1][3] == pagename)
+                self.changelog.extend(changelog)
 
 	def run(self, params):
 		parser = optparse.OptionParser(usage = USAGE)
